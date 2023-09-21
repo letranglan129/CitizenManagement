@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CitizenManagement", "CitizenManagement\CitizenManagement.csproj", "{E434A383-4474-4F94-AC4C-35E7A3B12626}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E434A383-4474-4F94-AC4C-35E7A3B12626}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E434A383-4474-4F94-AC4C-35E7A3B12626}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E434A383-4474-4F94-AC4C-35E7A3B12626}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E434A383-4474-4F94-AC4C-35E7A3B12626}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3D11FF62-1D42-4325-A1C1-7C67E2FD93E5}
+	EndGlobalSection
+EndGlobal

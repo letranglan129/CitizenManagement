@@ -1,0 +1,93 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title></title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/23.1.5/css/dx.light.css" />
+    <script src="https://cdn3.devexpress.com/jslib/23.1.5/js/dx.all.js"></script>
+    <script src="https://unpkg.com/devextreme-aspnet-data@2.9.2/js/dx.aspnet.data.js"></script>
+    <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/23.1.4/js/localization/dx.messages.vi.js"></script>
+
+    <script>
+        DevExpress.localization.locale(navigator.language);
+    </script>
+
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 75vh;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div id="toast"></div>
+    <form action="/Login/Index" method="post" id="form-container">
+        <div id="form-login">
+
+        </div>
+    </form>
+
+    <script>
+            $(() => {
+                const toast = $('#toast').dxToast({ displayTime: 600 }).dxToast('instance');
+                const form = $('#form-login').dxForm({
+                    formData: [],
+                    width: 500,
+                    items: [{
+                        itemType: 'group',
+                        caption: 'Đăng nhập',
+                        colCount: 1,
+                        items: [
+                            {
+                                dataField: 'UserName',
+                                label: {
+                                    text: 'Tài khoản'
+                                }
+                            },
+
+                            {
+                                dataField: 'Password',
+                                label: {
+                                    text: 'Mật khẩu'
+                                },
+                                editorOptions: {
+                                    mode: 'password'
+                                }
+                            },
+                            {
+                                itemType: 'button',
+                                horizontalAlignment: 'right',
+                                cssClass: 'add-phone-button',
+                                buttonOptions: {
+                                    text: 'Đăng nhập',
+                                    width: '100%',
+                                    type: 'default',
+                                    useSubmitBehavior: true,
+                                },
+                            }
+                        ]
+                    }]
+                })
+
+                    @if (ViewData["Error"] != null)
+                    {
+                        @Html.Raw("toast.option({ message:'"+ ViewData["Error"] + "', type: 'error' });toast.show();")
+                    }
+            })
+    </script>
+</body>
+</html>

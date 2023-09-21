@@ -1,0 +1,114 @@
+﻿@using CitizenManagement.Models;
+@{
+    ViewData["Title"] = "Quyền";
+    Account person = Session["info"] as Account;
+    List<Access> permissions = person.Permissions;
+}
+
+<div id="gridContainer" class=" h-100"></div>
+
+@section Scripts {
+    <script>
+
+        const url = window.location.origin
+        $(() => {
+            let dataGrid = $('#gridContainer').dxDataGrid({
+                dataSource: DevExpress.data.AspNet.createStore({
+                    key: 'Id',
+                    loadUrl: `/Access/GetAccess`,
+                    insertUrl: `/Access/Add`,
+                    updateUrl: `/Access/Update`,
+                    deleteUrl: `/Access/Delete`,
+                    onBeforeSend(method, ajaxOptions) {
+                        ajaxOptions.xhrFields = { withCredentials: true };
+                    },
+                }),
+                remoteOperations: false,
+                keyExpr: 'Id',
+                wordWrapEnabled: true,
+                allowColumnReordering: true,
+                filterRow: {
+                    visible: true,
+                    applyFilter: 'auto',
+                },
+                searchPanel: {
+                    visible: true,
+                    width: 400,
+                    placeholder: 'Tìm kiếm...',
+                },
+                headerFilter: {
+                    visible: true,
+                },
+                groupPanel: {
+                    visible: true,
+                },
+                filterPanel: {
+                    visible: true,
+                },
+                columnChooser: {
+                    enabled: true,
+                    mode: 'select',
+                    position: {
+                        my: 'right top',
+                        at: 'right bottom',
+                        of: '.dx-datagrid-column-chooser-button',
+                    },
+                },
+                columnFixing: {
+                    enabled: true
+                },
+                columnAutoWidth: true,
+                columnResizingMode: 'widget',
+                columnMinWidth: 100,
+                scrolling: {
+                    mode: "virtual"
+                },
+                editing: {
+                    mode: 'popup',
+                    @if (permissions.Find(x => x.Name == "Quyền" && x.Permission == "Create") != null)
+                    {
+                        @Html.Raw("allowAdding: true,")
+                    }
+                    @if (permissions.Find(x => x.Name == "Quyền" && x.Permission == "Delete") != null)
+                    {
+                        @Html.Raw("allowDeleting: true,")
+                    }
+                    @if (permissions.Find(x => x.Name == "Quyền" && x.Permission == "Update") != null)
+                    {
+                        @Html.Raw("allowUpdating: true,")
+                    }
+                    useIcons: true,
+                    popup: {
+                        title: 'Quyền',
+                        showTitle: true,
+                        height: "auto"
+                    },
+                    form: {
+                        items: [{
+                            itemType: 'group',
+                            colCount: 1,
+                            colSpan: 2,
+                            items: ['Name', 'Permission'],
+                        }],
+                    },
+                },
+                showBorders: true,
+                columns: [
+                    {
+                        dataField: 'Name',
+                        dataType: 'string',
+                        caption: "Chức năng",
+                    },
+                    {
+                        dataField: 'Permission',
+                        dataType: 'string',
+                        caption: "Quyền",
+                        lookup: {
+                            dataSource: ["Create", "Read", "Update", "Delete"]
+                        }
+                    },
+                ],
+            });
+        });
+    </script>
+}

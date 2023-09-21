@@ -1,0 +1,77 @@
+﻿@using CitizenManagement.Models;
+@{
+    ViewData["Title"] = "Nhân khẩu";
+    Account person = Session["info"] as Account;
+    List<Access> permissions = person.Permissions;
+}
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ManagerPeople</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/23.1.5/css/dx.light.css" />
+    <script src="https://cdn3.devexpress.com/jslib/23.1.5/js/dx.all.js"></script>
+    <script src="https://unpkg.com/devextreme-aspnet-data@2.9.2/js/dx.aspnet.data.js"></script>
+    <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/23.1.4/js/localization/dx.messages.vi.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    @Styles.Render("~/Content/css")
+
+    <script>
+        DevExpress.localization.locale(navigator.language);
+    </script>
+</head>
+<body class="dx-viewport">
+    <div id="toast"></div>
+    <div class="demo-container d-flex flex-column w-100">
+        <div id="accountChangePasswordPopup"></div>
+        <div id="toolbar"></div>
+        <div id="action-sheet"></div>
+        <div id="drawer" class="flex-fill">
+            <div id="content" class="dx-theme-background-color">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <script>
+        const navigation = [
+            @if (permissions.Find(x => (x.Name == "Khai sinh" && x.Permission == "Read") ||
+                                        (x.Name == "Công việc" && x.Permission == "Read") ||
+                                        (x.Name == "Tạm vắng" && x.Permission == "Read") ||
+                                        (x.Name == "Tạm trú" && x.Permission == "Read") ||
+                                        (x.Name == "Báo tử" && x.Permission == "Read")) != null)
+            {
+                @Html.Raw(@"{ id: 1, text: 'Nhân khẩu', icon: 'group', path: '/People/Index' },")
+            }
+            @if (permissions.Find(x => (x.Name == "Hộ khẩu" && x.Permission == "Read")) != null)
+            {
+                @Html.Raw(@"{ id: 2, text: 'Hộ khẩu', icon: 'home', path: '/Household/Index' },")
+            }
+            @if (permissions.Find(x => (x.Name == "Cán bộ" && x.Permission == "Read")) != null)
+            {
+                @Html.Raw(@"{ id: 3, text: 'Cán bộ', icon: 'card', path: '/Account/Index' },")
+            }
+            @if (permissions.Find(x => (x.Name == "Quyền" && x.Permission == "Read")) != null)
+            {
+                @Html.Raw(@"{ id: 4, text: 'Quyền', icon: 'key', path: '/Access/Index' },")
+            }
+
+            { id: 5, text: 'Đăng xuất', icon: 'panelleft', path: "/Login/Logout" },
+        ];
+    </script>
+    @Scripts.Render("~/Content/js")
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
+

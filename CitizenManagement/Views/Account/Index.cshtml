@@ -1,0 +1,321 @@
+﻿@using CitizenManagement.Models;
+@{
+    ViewData["Title"] = "Tài khoản";
+    Account person = Session["info"] as Account;
+    List<Access> permissions = person.Permissions;
+}
+
+<div id="gridContainer" class=" h-100"></div>
+
+@section Scripts {
+    <script>
+        function permissionTagBoxEditorTemplate(cellElement, cellInfo) {
+            return $('<div>').dxTagBox({
+                dataSource: DevExpress.data.AspNet.createStore({
+                    key: 'Id',
+                    loadUrl: `/Access/GetAccess`,
+                }),
+                value: cellInfo.value,
+                displayExpr: (item) => `${item.Name} - ${item.Permission}`,
+                showSelectionControls: true,
+                applyValueMode: 'useButtons',
+                searchEnabled: true,
+                onValueChanged(e) {
+                    cellInfo.setValue(e.value);
+                },
+                onSelectionChanged() {
+                    cellInfo.component.updateDimensions();
+                },
+            });
+        }
+
+        const url = window.location.origin
+        $(() => {
+            let dataGrid = $('#gridContainer').dxDataGrid({
+                dataSource: DevExpress.data.AspNet.createStore({
+                    key: 'Id',
+                    loadUrl: `/Account/GetAccounts`,
+                    insertUrl: `/Account/Add`,
+                    updateUrl: `/Account/Update`,
+                    deleteUrl: `/Account/Delete`,
+                    onBeforeSend(method, ajaxOptions) {
+                        ajaxOptions.xhrFields = { withCredentials: true };
+                    },
+                }),
+                remoteOperations: false,
+                keyExpr: 'Id',
+                wordWrapEnabled: true,
+                allowColumnReordering: true,
+                filterRow: {
+                    visible: true,
+                    applyFilter: 'auto',
+                },
+                searchPanel: {
+                    visible: true,
+                    width: 400,
+                    placeholder: 'Tìm kiếm...',
+                },
+                headerFilter: {
+                    visible: true,
+                },
+                groupPanel: {
+                    visible: true,
+                },
+                filterPanel: {
+                    visible: true,
+                },
+                columnChooser: {
+                    enabled: true,
+                    mode: 'select',
+                    position: {
+                        my: 'right top',
+                        at: 'right bottom',
+                        of: '.dx-datagrid-column-chooser-button',
+                    },
+                },
+                columnFixing: {
+                    enabled: true
+                },
+                columnAutoWidth: true,
+                columnResizingMode: 'widget',
+                columnMinWidth: 100,
+                scrolling: {
+                    mode: "virtual"
+                },
+                editing: {
+                    mode: 'popup',
+                    @if (permissions.Find(x => x.Name == "Cán bộ" && x.Permission == "Create") != null)
+                    {
+                        @Html.Raw("allowAdding: true,")
+                    }
+                    @if (permissions.Find(x => x.Name == "Cán bộ" && x.Permission == "Delete") != null)
+                    {
+                        @Html.Raw("allowDeleting: true,")
+                    }
+                    @if (permissions.Find(x => x.Name == "Cán bộ" && x.Permission == "Update") != null)
+                    {
+                        @Html.Raw("allowUpdating: true,")
+                    }
+                    useIcons: true,
+                    popup: {
+                        title: 'Cán bộ',
+                        showTitle: true,
+                        height: "auto"
+                    },
+                    form: {
+                        items: [{
+                            itemType: 'group',
+                            colCount: 1,
+                            colSpan: 2,
+                            items: ['UserName', 'Info', 'Permissions'],
+                        }],
+                    },
+                },
+                showBorders: true,
+
+                onEditorPreparing(e) {
+                    console.log(e)
+                    if (e.parentType === 'dataRow' && e.dataField === 'UserName') {
+                        e.editorOptions.disabled = e.row.data?.Id ? true : false ;
+                    }
+                    if (e.parentType === 'dataRow' && e.dataField === 'Info') {
+                        e.editorOptions.disabled = e.row.data?.Id ? true : false;
+                    }
+                },
+                columns: [
+                    {
+                        dataField: 'UserName',
+                        dataType: 'string',
+                        caption: "Tài khoản",
+                        validationRules: [{ type: 'required' }],
+                    },
+                    {
+                        dataField: 'Info',
+                        caption: "Người dùng",
+                        width: 200,
+                        visible: false,
+                        lookup: {
+                            dataSource: DevExpress.data.AspNet.createStore({
+                                key: 'Id',
+                                loadUrl: `/People/GetPeoples`,
+                                useDefaultSearch: false,
+                                loadMode: 'raw'
+                            }),
+                            valueExpr: "Id",
+                            displayExpr: (item) => `${item.Name} - ${item.Identity.Number}`,
+                        },
+                        validationRules: [{ type: 'required' }],
+                    },
+                    {
+                        dataField: 'InfoData[0].Name',
+                        dataType: 'string',
+                        caption: "Tên cán bộ",
+                    },
+                    {
+                        dataField: 'InfoData[0].Birthday',
+                        dataType: 'date',
+                        caption: "Ngày sinh",
+                    },
+                    {
+                        dataField: 'InfoData[0].Gender',
+                        dataType: 'string',
+                        caption: "Giới tính",
+                    },
+                    {
+                        dataField: 'InfoData[0].Ethnic',
+                        dataType: 'string',
+                        caption: "Dân tộc",
+                    },
+                    {
+                        dataField: 'InfoData[0].Religion',
+                        dataType: 'string',
+                        caption: "Tôn giáo",
+                    }, {
+                        dataField: 'InfoData[0].Identity.Number',
+                        dataType: 'string',
+                        caption: "CCCD",
+                    }, {
+                        dataField: "InfoData[0].Domicile",
+                        caption: "Nguyên quán",
+                        width: 250,
+                        cellTemplate(container, option) {
+                            if (option.value) {
+                                let arrayPlace = []
+                                if (option.value.Address) {
+                                    arrayPlace.push(option.value.Address)
+                                }
+                                if (option.value.Ward) {
+                                    arrayPlace.push(option.value.Ward)
+                                }
+                                if (option.value.District) {
+                                    arrayPlace.push(option.value.District)
+                                }
+                                if (option.value.Province) {
+                                    arrayPlace.push(option.value.Province)
+                                }
+                                container.text(arrayPlace.join(', '))
+                            } else {
+                                container.text("")
+                            }
+                        },
+                    },
+                    {
+                        dataField: 'Permissions',
+                        caption: "Quyền",
+                        width: 200,
+                        visible: false,
+                        editCellTemplate: permissionTagBoxEditorTemplate,
+                        lookup: {
+                            dataSource: DevExpress.data.AspNet.createStore({
+                                key: 'Id',
+                                loadUrl: `/Access/GetAccess`,
+                                useDefaultSearch: false,
+                                loadMode: 'raw'
+                            }),
+                            displayExpr: (item) => `${item.Name} - ${item.Permission}`,
+                        },
+                    }
+                ],
+                @if (permissions.Find(x => x.Name == "Cán bộ" && (x.Permission == "Create" || x.Permission == "Update")) != null)
+                    {
+                        @Html.Raw(@"masterDetail: {
+                    enabled: true,
+                    template: (_, masterDetailOptions) => {
+                        return $('<div>').dxDataGrid({
+                            dataSource: new DevExpress.data.CustomStore({
+                                load: function () {
+                                    return Promise.resolve(masterDetailOptions.data.Permissions);
+                                },
+                                insert: function (values) {
+                                    return $.ajax({
+                                        url: `/Account/AddPermission?Id=${masterDetailOptions.data.Id}`,
+                                        method: 'POST',
+                                        data: {
+                                            values: JSON.stringify(values.Merge)
+                                        }
+                                    }).then(() => {
+                                        const dataGridInstance = dataGrid.dxDataGrid('instance')
+                                        var dataSource = dataGridInstance.getDataSource();
+                                        dataSource.reload();
+                                    })
+                                },
+                                remove: function (key) {
+                                    console.log(key)
+                                    return $.ajax({
+                                        url: `/Account/DeletePermission?Id=${masterDetailOptions.data.Id}`,
+                                        method: 'DELETE',
+                                        data: {
+                                            key: JSON.stringify(key)
+                                        }
+                                    }).then(() => {
+                                        const dataGridInstance = dataGrid.dxDataGrid('instance')
+                                        var dataSource = dataGridInstance.getDataSource();
+                                        dataSource.reload();
+                                    })
+                                }
+                            }),
+                            showBorders: true,
+                scrolling: {
+                    mode: 'virtual'
+                },height: 400,
+                            editing: {
+                                mode: 'popup',
+                                allowAdding: false,
+                                useIcons: true,
+                                allowDeleting: true,
+                                popup: {
+                                    title: 'Quyền',
+                                    showTitle: true,
+                                    height: 'auto'
+                                },
+                                form: {
+                                    items: [{
+                                        itemType: 'group',
+                                        colCount: 1,
+                                        colSpan: 2,
+                                        items: [{
+                                            dataField: 'Merge',
+                                            editorType: 'dxSelectBox',
+                                            editorOptions: {
+                                                dataSource: DevExpress.data.AspNet.createStore({
+                                                    loadUrl: `/Access/GetAccess`,
+                                                    useDefaultSearch: false,
+                                                    loadMode: 'raw',
+                                                }),
+                                                displayExpr: (e) => {
+                                                    if (e)
+                                                        return `${e.Name} - ${e.Permission}`
+                                                    else
+                                                        return null
+                                                },
+                                            }
+                                        }],
+                                    }],
+                                },
+                            },
+                            columns: [
+                                {
+                                    dataField: 'Name',
+                                    dataType: 'string',
+                                    caption: 'Chức năng',
+                                },
+                                {
+                                    dataField: 'Permission',
+                                    dataType: 'string',
+                                    caption: 'Quyền'
+                                },
+                                {
+                                    dataField: 'Merge',
+                                    dataType: 'string',
+                                    caption: 'Quyền',
+                                    visible: false,
+                                },
+                            ],
+                        })
+                    },
+                }")
+                    }                
+            });
+        });
+    </script>
+}

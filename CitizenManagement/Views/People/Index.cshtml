@@ -1,0 +1,1356 @@
+﻿@using CitizenManagement.Models;
+@{
+    ViewData["Title"] = "Nhân khẩu";
+    Account person = Session["info"] as Account;
+    List<Access> permissions = person.Permissions;
+}
+
+<div id="gridContainer" class=" h-100"></div>
+<div id="popupJob">
+    <div class="popup-content">
+
+    </div>
+</div>
+
+<div id="popupTemporaryResidence">
+    <div class="popup-content">
+
+    </div>
+</div>
+
+<div id="popupTemporaryAbsent">
+    <div class="popup-content">
+
+    </div>
+</div>
+
+<div id="popupDead">
+    <div class="popup-content">
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+
+        const toast = $('#toast').dxToast({ displayTime: 600 }).dxToast('instance');
+        const url = window.location.origin
+        let em = DevExpress.data.AspNet.createStore({
+            key: 'HouseholdId',
+            loadUrl: `/Household/GetHouseholds`,
+            useDefaultSearch: false,
+            loadMode: 'raw'
+        })
+        function dropDownBoxEditorTemplate(cellElement, cellInfo) {
+            console.log(cellInfo)
+            return $('<div>').dxDropDownBox({
+                dropDownOptions: { width: '100%' },
+                dataSource: em,
+                value: cellInfo.value,
+                valueExpr: 'HouseholdId',
+                displayExpr: "OwnerInfo[0].Name",
+                contentTemplate(e) {
+                    return $('<div>').dxDataGrid({
+                        dataSource: em,
+                        columns: [{ dataField: 'HouseholdId', caption: "Mã", width: 120 }, { dataField: 'OwnerInfo[0].Name', caption: "Chủ hộ", width: 220 }, {
+                            dataField: "Place",
+                            caption: "Địa chỉ", width: 550,
+                            cellTemplate(container, option) {
+                                if (option.value) {
+                                    let arrayPlace = []
+                                    if (option.value.Address) {
+                                        arrayPlace.push(option.value.Address)
+                                    }
+                                    if (option.value.Ward) {
+                                        arrayPlace.push(option.value.Ward)
+                                    }
+                                    if (option.value.District) {
+                                        arrayPlace.push(option.value.District)
+                                    }
+                                    if (option.value.Province) {
+                                        arrayPlace.push(option.value.Province)
+                                    }
+                                    container.text(arrayPlace.join(', '))
+                                } else {
+                                    container.text("")
+                                }
+                            },
+                        }],
+                        hoverStateEnabled: true,
+                        scrolling: { mode: 'virtual' },
+                        height: 250,
+                        selection: { mode: 'single' },
+                        selectedRowKeys: [cellInfo.value],
+                        focusedRowEnabled: true,
+                        focusedRowKey: cellInfo.value,
+                        onSelectionChanged(selectionChangedArgs) {
+                            e.component.option('value', selectionChangedArgs.selectedRowKeys[0]);
+                            cellInfo.setValue(selectionChangedArgs.selectedRowKeys[0]);
+                            if (selectionChangedArgs.selectedRowKeys.length > 0) {
+                                e.component.close();
+                            }
+                        },
+                    });
+                },
+            });
+        }
+
+        $(() => {
+            let dataGrid = $('#gridContainer').dxDataGrid({
+                dataSource: DevExpress.data.AspNet.createStore({
+                    key: 'Id',
+                    loadUrl: `/People/getPeoples`,
+                    insertUrl: `/People/Add`,
+                    updateUrl: `/People/Update`,
+                    deleteUrl: `/People/Delete`,
+                    onBeforeSend(method, ajaxOptions) {
+                        ajaxOptions.xhrFields = { withCredentials: true };
+                    },
+                }),
+                remoteOperations: false,
+                keyExpr: 'Id',
+                wordWrapEnabled: true,
+                allowColumnReordering: true,
+                allowColumnResizing: true,
+                filterRow: {
+                    visible: true,
+                    applyFilter: 'auto',
+                },
+                searchPanel: {
+                    visible: true,
+                    width: 400,
+                    placeholder: 'Tìm kiếm...',
+                },
+                headerFilter: {
+                    visible: true,
+                },
+                groupPanel: {
+                    visible: true,
+                },
+                filterPanel: {
+                    visible: true,
+                },
+                columnChooser: {
+                    enabled: true,
+                    mode: 'select',
+                    position: {
+                        my: 'right top',
+                        at: 'right bottom',
+                        of: '.dx-datagrid-column-chooser-button',
+                    },
+                },
+                columnFixing: {
+                    enabled: true
+                },
+                columnAutoWidth: true,
+                columnResizingMode: 'widget',
+                columnMinWidth: 100,
+                scrolling: {
+                    mode: "virtual"
+                },
+                editing: {
+                    mode: 'popup',
+                    @if (permissions.Find(x => x.Name == "Khai sinh" && x.Permission == "Create") != null)
+                    {
+                        @Html.Raw("allowAdding: true,")
+                    }
+                    @if (permissions.Find(x => x.Name == "Khai sinh" && x.Permission == "Delete") != null)
+                    {
+                        @Html.Raw("allowDeleting: true,")
+                    }
+                    @if (permissions.Find(x => x.Name == "Khai sinh" && x.Permission == "Update") != null)
+                    {
+                        @Html.Raw("allowUpdating: true,")
+                    }
+                    useIcons: true,
+                    popup: {
+                        title: 'Công dân',
+                        showTitle: true,
+                        fullScreen: true,
+                    },
+                    form: {
+                        items: [
+                            {
+                                itemType: 'group',
+                                colCount: 2,
+                                colSpan: 2,
+                                items: [{
+                                    dataField: 'Avatar',
+                                    colSpan: 2,
+                                }, 'Name', 'OrtherName', 'Birthday', {
+                                    dataField: 'Gender',
+                                    editorType: 'dxSelectBox',
+                                    editorOptions: {
+                                        dataSource: ["Nam", "Nữ"],
+                                        value: "Việt Nam"
+                                    }
+                                }, 'Level', 'Ethnic', 'Religion', 'Nationality'],
+                            }, {
+                                itemType: 'group',
+                                colCount: 2,
+                                colSpan: 2,
+                                caption: 'Căn cước công dân',
+                                items: ['Identity.Number', 'Identity.Date', 'Identity.Identification',
+                                    'Identity.Place.Province', 'Identity.Place.District', 'Identity.Place.Ward', 'Identity.Place.Address'],
+                            }, {
+                                itemType: 'group',
+                                colCount: 2,
+                                colSpan: 2,
+                                caption: 'Nguyên quán',
+                                items: ['Domicile.Province', 'Domicile.District', 'Domicile.Ward', 'Domicile.Address'],
+                            }, {
+                                itemType: 'group',
+                                colCount: 2,
+                                colSpan: 2,
+                                caption: 'Thường trú',
+                                items: ['Resident.Province', 'Resident.District', 'Resident.Ward', 'Resident.Address'],
+                            }, {
+                                itemType: 'group',
+                                colCount: 2,
+                                colSpan: 2,
+                                caption: 'Chỗ ở hiện tại',
+                                items: ['Staying.Province', 'Staying.District', 'Staying.Ward', 'Staying.Address'],
+                            }],
+                    },
+                },
+                showBorders: true,
+                columns: [{
+                    dataField: 'Avatar',
+                    width: 100,
+                    allowFiltering: false,
+                    allowSorting: false,
+                    cellTemplate(container, options) {
+                        $('<div>')
+                            .append($('<img>', { src: options.value, style: "width: 100%; aspect-ratio: 1 / 1;" }))
+                            .appendTo(container);
+                    },
+                    editCellTemplate: (cellElement, cellInfo) => {
+                        return $('<div>').dxFileUploader({
+                            accept: 'image/*',
+                            uploadMode: 'instantly',
+                            name: 'imageFile',
+                            elementAttr: {
+                                class: "d-flex uploader-default-button uploader-h-120"
+                            },
+                            uploadUrl: `${url}/Upload/Image`,
+                            onUploaded: (e) => {
+                                const url = JSON.parse(e.request.response).url
+                                cellInfo.setValue(url)
+                                document.querySelector("#preview-avatar").setAttribute("src", url)
+                            },
+                            onInitialized: ({ element, component }) => {
+                                if (cellInfo.value)
+                                    element[0].innerHTML += `<img id="preview-avatar" style="aspect-ratio: 3 / 4;height: 120px; margin-right: 20px;object-fit: cover" src="${cellInfo.value}"/>`
+                                else
+                                    element[0].innerHTML += `<img id="preview-avatar" style="aspect-ratio: 3 / 4;height: 120px; margin-right: 20px;object-fit: cover" src="https://placehold.jp/90x120.png?text=3x4"/>`
+                            }
+                        });
+                    },
+                    caption: "Ảnh"
+                }, {
+                    dataField: 'Name',
+                    dataType: 'string', validationRules: [{ type: 'required' }],
+                    caption: "Họ tên"
+                }, {
+                    dataField: 'OrtherName',
+                    dataType: 'string',
+                    caption: "Tên khác"
+                },
+                {
+                    dataField: 'Birthday',
+                    dataType: 'date', validationRules: [{ type: 'required' }],
+                    caption: "Ngày sinh"
+                }, {
+                    dataField: 'Gender',
+                    dataType: 'string', validationRules: [{ type: 'required' }],
+                    caption: "Giới tính"
+                }, {
+                    dataField: 'Level',
+                    dataType: 'number',
+                    caption: "Trình độ văn hóa",
+                    lookup: {
+                        dataSource: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                    }
+                }, {
+                    dataField: 'Ethnic',
+                    dataType: 'string', validationRules: [{ type: 'required' }],
+                    caption: "Dân tộc",
+                    lookup: {
+                        dataSource: DevExpress.data.AspNet.createStore({
+                            key: 'name',
+                            loadUrl: `https://api.nosomovo.xyz/ethnic/getalllist`,
+                            useDefaultSearch: false,
+                            loadMode: 'raw'
+                        }),
+                        displayExpr: 'name',
+                        valueExpr: 'name'
+                    },
+                }, {
+                    dataField: 'Religion',
+                    dataType: 'string',
+                    caption: "Tôn giáo",
+                    lookup: {
+                        dataSource: DevExpress.data.AspNet.createStore({
+                            loadUrl: `/Religion/getList`,
+                            useDefaultSearch: false,
+                            loadMode: 'raw'
+                        }),
+                    },
+                }, {
+                    dataField: 'Nationality',
+                    dataType: 'string', validationRules: [{ type: 'required' }],
+                    caption: "Quốc tịch",
+                    lookup: {
+                        dataSource: DevExpress.data.AspNet.createStore({
+                            key: 'Name',
+                            loadUrl: `/Place/GetCountries`,
+                            useDefaultSearch: false,
+                            loadMode: 'raw'
+                        }),
+                        displayExpr: 'Name',
+                        valueExpr: 'Name'
+                    },
+                }, {
+                    dataField: 'Identity.Number',
+                    dataType: 'string',
+                    caption: "Số CCCD"
+                },
+
+                {
+                    dataField: "Identity.Place",
+                    caption: "Nơi cấp CCCD",
+                    width: 250,
+                    cellTemplate(container, option) {
+                        if (option.value) {
+                            let arrayPlace = []
+                            if (option.value.Address) {
+                                arrayPlace.push(option.value.Address)
+                            }
+                            if (option.value.Ward) {
+                                arrayPlace.push(option.value.Ward)
+                            }
+                            if (option.value.District) {
+                                arrayPlace.push(option.value.District)
+                            }
+                            if (option.value.Province) {
+                                arrayPlace.push(option.value.Province)
+                            }
+                            container.text(arrayPlace.join(', '))
+                        } else {
+                            container.text("")
+                        }
+                    },
+                },
+
+                {
+                    dataField: 'Identity.Place.Address',
+                    dataType: 'string',
+                    caption: "Đường cấp",
+                    visible: false,
+                },
+                {
+                    dataField: 'Identity.Place.Ward',
+                    dataType: 'string',
+                    caption: "Xã/Phường cấp",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Identity = {
+                            ...(currentRowData?.Identity || {}),
+                            Place: {
+                                Province: currentRowData.Identity.Place.Province,
+                                District: currentRowData.Identity.Place.District,
+                                Ward: value.Name,
+                            }
+                        }
+
+                        delete currentRowData.IdentityPlaceDistrictId
+                        delete currentRowData.IdentityPlaceProvinceId
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetWards?code=${options?.data?.IdentityPlaceDistrictId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+                }, {
+                    dataField: 'Identity.Place.District',
+                    dataType: 'string',
+                    caption: "Huyện/Quận cấp",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Identity = {
+                            ...(currentRowData?.Identity || {}),
+                            Place: {
+                                Province: currentRowData.Identity.Place.Province,
+                                District: value.Name,
+                            }
+                        }
+
+                        newData.IdentityPlaceDistrictId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetDistricts?code=${options?.data?.IdentityPlaceProvinceId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+                }, {
+                    dataField: 'Identity.Place.Province',
+                    dataType: 'string',
+                    caption: "Tỉnh/Thành phố cấp",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Identity = {
+                            ...(currentRowData?.Identity || {}),
+                            Place: {
+                                Province: value.Name
+                            }
+                        }
+
+                        newData.IdentityPlaceProvinceId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetProvinces`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    },
+                }, {
+                    dataField: 'Identity.Date',
+                    dataType: 'date',
+                    caption: "Ngày cấp CMND"
+                }, {
+                    dataField: 'Identity.Identification',
+                    dataType: 'string',
+                    caption: "Đặt điểm nhận dạng",
+                    visible: false,
+                },
+                {
+                    dataField: "Domicile",
+                    caption: "Nguyên quán",
+                    width: 250,
+                    cellTemplate(container, option) {
+                        if (option.value) {
+                            let arrayPlace = []
+                            if (option.value.Address) {
+                                arrayPlace.push(option.value.Address)
+                            }
+                            if (option.value.Ward) {
+                                arrayPlace.push(option.value.Ward)
+                            }
+                            if (option.value.District) {
+                                arrayPlace.push(option.value.District)
+                            }
+                            if (option.value.Province) {
+                                arrayPlace.push(option.value.Province)
+                            }
+                            container.text(arrayPlace.join(', '))
+                        } else {
+                            container.text("")
+                        }
+                    },
+                },
+
+                {
+                    dataField: 'Domicile.Address',
+                    dataType: 'string',
+                    caption: "Đường",
+                    visible: false,
+                }, {
+                    dataField: 'Domicile.Ward',
+                    dataType: 'string',
+                    caption: "Xã/Phường",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Domicile = {
+                            Province: currentRowData.Domicile.Province,
+                            District: currentRowData.Domicile.District,
+                            Ward: value.Name,
+                        }
+
+                        delete currentRowData.DomicileDistrictId
+                        delete currentRowData.DomicileProvinceId
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetWards?code=${options?.data?.DomicileDistrictId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+                }, {
+                    dataField: 'Domicile.District',
+                    dataType: 'string',
+                    caption: "Huyện/Quận",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Domicile = {
+                            Province: currentRowData.Domicile.Province,
+                            District: value.Name,
+                        }
+
+                        newData.DomicileDistrictId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetDistricts?code=${options?.data?.DomicileProvinceId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+                }, {
+                    dataField: 'Domicile.Province',
+                    dataType: 'string',
+                    caption: "Tỉnh/Thành phố",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Domicile = {
+                            Province: value.Name
+                        }
+
+                        newData.DomicileProvinceId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetProvinces`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    },
+                },
+
+                {
+                    dataField: "Resident",
+                    caption: "Thường trú",
+                    width: 250,
+                    cellTemplate(container, option) {
+                        if (option.value) {
+                            let arrayPlace = []
+                            if (option.value.Address) {
+                                arrayPlace.push(option.value.Address)
+                            }
+                            if (option.value.Ward) {
+                                arrayPlace.push(option.value.Ward)
+                            }
+                            if (option.value.District) {
+                                arrayPlace.push(option.value.District)
+                            }
+                            if (option.value.Province) {
+                                arrayPlace.push(option.value.Province)
+                            }
+                            container.text(arrayPlace.join(', '))
+                        } else {
+                            container.text("")
+                        }
+                    },
+                },
+
+                {
+                    dataField: 'Resident.Address',
+                    dataType: 'string',
+                    caption: "Đường",
+                    visible: false,
+
+                }, {
+                    dataField: 'Resident.Ward',
+                    dataType: 'string',
+                    caption: "Xã/Phường",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Resident = {
+                            Province: currentRowData.Resident.Province,
+                            District: currentRowData.Resident.District,
+                            Ward: value.Name,
+                        }
+
+                        delete currentRowData.ResidentDistrictId
+                        delete currentRowData.ResidentProvinceId
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetWards?code=${options?.data?.ResidentDistrictId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+                }, {
+                    dataField: 'Resident.District',
+                    dataType: 'string',
+                    caption: "Huyện/Quận",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Resident = {
+                            Province: currentRowData.Resident.Province,
+                            District: value.Name,
+                        }
+
+                        newData.ResidentDistrictId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetDistricts?code=${options?.data?.ResidentProvinceId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+
+                }, {
+                    dataField: 'Resident.Province',
+                    dataType: 'string',
+                    caption: "Tỉnh/Thành phố",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Resident = {
+                            Province: value.Name
+                        }
+
+                        newData.ResidentProvinceId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetProvinces`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    },
+                },
+
+
+
+                {
+                    dataField: "Staying",
+                    caption: "Chỗ ở hiện tại",
+                    width: 250,
+                    cellTemplate(container, option) {
+                        if (option.value) {
+                            let arrayPlace = []
+                            if (option.value.Address) {
+                                arrayPlace.push(option.value.Address)
+                            }
+                            if (option.value.Ward) {
+                                arrayPlace.push(option.value.Ward)
+                            }
+                            if (option.value.District) {
+                                arrayPlace.push(option.value.District)
+                            }
+                            if (option.value.Province) {
+                                arrayPlace.push(option.value.Province)
+                            }
+                            container.text(arrayPlace.join(', '))
+                        } else {
+                            container.text("")
+                        }
+                    },
+                },
+
+                {
+                    dataField: 'Staying.Address',
+                    dataType: 'string',
+                    caption: "Đường",
+                    visible: false,
+                }, {
+                    dataField: 'Staying.Ward',
+                    dataType: 'string',
+                    caption: "Xã/Phường",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Staying = {
+                            Province: currentRowData.Staying.Province,
+                            District: currentRowData.Staying.District,
+                            Ward: value.Name,
+                        }
+
+                        delete currentRowData.StayingDistrictId
+                        delete currentRowData.StayingProvinceId
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetWards?code=${options?.data?.StayingDistrictId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw',
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+                }, {
+                    dataField: 'Staying.District',
+                    dataType: 'string',
+                    caption: "Huyện/Quận",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Staying = {
+                            Province: currentRowData.Staying.Province,
+                            District: value.Name,
+                        }
+
+                        newData.StayingDistrictId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetDistricts?code=${options?.data?.StayingProvinceId || ""}`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    }
+
+                }, {
+                    dataField: 'Staying.Province',
+                    dataType: 'string',
+                    caption: "Tỉnh/Thành phố",
+                    visible: false,
+                    setCellValue: function (newData, value, currentRowData) {
+                        newData.Staying = {
+                            Province: value.Name
+                        }
+
+                        newData.StayingProvinceId = value.Id
+                    },
+                    lookup: {
+                        dataSource(options) {
+                            return {
+                                store: DevExpress.data.AspNet.createStore({
+                                    key: 'Name',
+                                    loadUrl: `/Place/GetProvinces`,
+                                    useDefaultSearch: false,
+                                    loadMode: 'raw'
+                                }),
+                            };
+                        },
+                        displayExpr: 'Name',
+                    },
+                },
+
+                {
+                    type: 'buttons',
+                    buttons: ['edit', 'delete',
+                        @if (permissions.Find(x => x.Name == "Công việc" && x.Permission == "Read") != null)
+                        {
+                            string per = "";
+                            if (permissions.Find(x => x.Name == "Công việc" && x.Permission == "Create") != null)
+                            {
+                                per += "allowAdding: true,";
+                            }
+                            if (permissions.Find(x => x.Name == "Công việc" && x.Permission == "Delete") != null)
+                            {
+                                per += "allowDeleting: true,";
+                            }
+                            if (permissions.Find(x => x.Name == "Công việc" && x.Permission == "Update") != null)
+                            {
+                                per += "allowUpdating: true,";
+                            }
+                            @Html.Raw(@"{
+                                icon: 'product',
+                                hint: 'Lịch sử công việc',
+                                onClick(e) {
+                                    const popup = $('#popupJob')
+                                        .dxPopup({
+                                            width: 1000,
+                                            maxHeight: 'calc(100vh - 100px)',
+                                            height: 'auto',
+                                            visible: false,
+                                            title: 'Lịch sử công việc',
+                                            hideOnOutsideClick: true,
+                                            showCloseButton: true,
+                                            resizeEnabled: true,
+                                            contentTemplate() {
+                                                const view = $('<div>').dxDataGrid({
+                                                    dataSource: DevExpress.data.AspNet.createStore({
+                                                        key: ['Name', 'DateStart', 'DateEnd'],
+                                                        loadUrl: `/Job/GetJobs?Id=${e.row.data.Id}`,
+                                                        insertUrl: `/Job/Add?Id=${e.row.data.Id}`,
+                                                        updateUrl: `/Job/Update?Id=${e.row.data.Id}`,
+                                                        deleteUrl: `/Job/Delete?Id=${e.row.data.Id}`,
+                                                        onBeforeSend(method, ajaxOptions) {
+                                                            ajaxOptions.xhrFields = { withCredentials: true };
+                                                        },
+                                                    }),
+                                                    paging: {
+                                                        pageSize: 5,
+                                                    },
+                                                    showBorders: true,
+                                                    editing: {
+                                                        mode: 'popup',
+
+                                                        "+ per + @"
+                                                        useIcons: true,
+                                                        popup: {
+                                                                    title: 'Công việc',
+                                                            showTitle: true,
+                                                            width: 1000,
+                                                            height: 'auto',
+                                                        },
+                                                        form: {
+                                                                    items: [{
+                                                                        itemType: 'group',
+                                                                colCount: 2,
+                                                                colSpan: 2,
+                                                                caption: 'Thông tin công việc',
+                                                                items: [{ dataField: 'Name', colSpan: 2 }, 'DateStart', 'DateEnd'],
+                                                            }, {
+                                                                itemType: 'group',
+                                                                colCount: 2,
+                                                                colSpan: 2,
+                                                                caption: 'Tại',
+                                                                items: ['Place.Province', 'Place.District', 'Place.Ward', 'Place.Address'],
+                                                            }],
+                                                        },
+                                                    },
+                                                    wordWrapEnabled: true,
+
+                                                    columns: [
+                                                        {
+                                                        dataField: 'Name',
+                                                            dataType: 'string',validationRules: [{ type: 'required' }],
+                                                            caption: 'Nghề'
+                                                        },
+                                                        {
+                                                        dataField: 'DateStart',
+                                                            dataType: 'date',validationRules: [{ type: 'required' }],
+                                                            caption: 'Ngày bắt đầu'
+                                                        },
+                                                        {
+                                                        dataField: 'DateEnd',
+                                                            dataType: 'date',
+                                                            caption: 'Ngày kết thúc'
+                                                        },
+                                                        {
+                                                        dataField: 'Place',
+                                                            caption: 'Tại',
+                                                            width: 250,
+                                                            cellTemplate(container, option) {
+                                                                if (option.value) {
+                                                                    let arrayPlace = []
+                                                                    if (option.value.Address) {
+                                                                        arrayPlace.push(option.value.Address)
+                                                                    }
+                                                                    if (option.value.Ward) {
+                                                                        arrayPlace.push(option.value.Ward)
+                                                                    }
+                                                                    if (option.value.District) {
+                                                                        arrayPlace.push(option.value.District)
+                                                                    }
+                                                                    if (option.value.Province) {
+                                                                        arrayPlace.push(option.value.Province)
+                                                                    }
+                                                                    container.text(arrayPlace.join(', '))
+                                                                } else {
+                                                                    container.text('')
+                                                                }
+                                                            },
+                                                        }, {
+                                                        dataField: 'Place.Address',
+                                                            dataType: 'string',
+                                                            caption: 'Đường',
+                                                            visible: false,
+                                                        }, {
+                                                        dataField: 'Place.Ward',
+                                                            dataType: 'string',validationRules: [{ type: 'required' }],
+                                                            caption: 'Xã/Phường',
+                                                            visible: false,
+                                                            setCellValue: function (newData, value, currentRowData) {
+                                                                newData.Place = {
+                                                                Province: currentRowData.Place.Province,
+                                                                    District: currentRowData.Place.District,
+                                                                    Ward: value.Name,
+                                                                }
+
+                                                                delete currentRowData.PlaceDistrictId
+                                                                delete currentRowData.PlaceProvinceId
+                                                            },
+                                                            lookup: {
+                                                                dataSource(options) {
+                                                                    return {
+                                                                    store: DevExpress.data.AspNet.createStore({
+                                                                        key: 'Name',
+                                                                            loadUrl: `/Place/GetWards?code=${options?.data?.PlaceDistrictId || ''}`,
+                                                                            useDefaultSearch: false,
+                                                                            loadMode: 'raw'
+                                                                        }),
+                                                                    };
+                                                                },
+                                                                displayExpr: 'Name',
+                                                            }
+                                                        }, {
+                                                        dataField: 'Place.District',
+                                                            dataType: 'string',validationRules: [{ type: 'required' }],
+                                                            caption: 'Huyện/Quận',
+                                                            visible: false,
+                                                            setCellValue: function (newData, value, currentRowData) {
+                                                                newData.Place = {
+                                                                Province: currentRowData.Place.Province,
+                                                                    District: value.Name,
+                                                                }
+
+                                                                newData.PlaceDistrictId = value.Id
+                                                            },
+                                                            lookup: {
+                                                                dataSource(options) {
+                                                                    return {
+                                                                    store: DevExpress.data.AspNet.createStore({
+                                                                        key: 'Name',
+                                                                            loadUrl: `/Place/GetDistricts?code=${options?.data?.PlaceProvinceId || ''}`,
+                                                                            useDefaultSearch: false,
+                                                                            loadMode: 'raw'
+                                                                        }),
+                                                                    };
+                                                                },
+                                                                displayExpr: 'Name',
+                                                            }
+                                                        }, {
+                                                        dataField: 'Place.Province',
+                                                            dataType: 'string',validationRules: [{ type: 'required' }],
+                                                            caption: 'Tỉnh/Thành phố',
+                                                            visible: false,
+                                                            setCellValue: function (newData, value, currentRowData) {
+                                                                newData.Place = {
+                                                                Province: value.Name
+                                                                }
+
+                                                                newData.PlaceProvinceId = value.Id
+                                                            },
+                                                            lookup: {
+                                                                dataSource(options) {
+                                                                    return {
+                                                                    store: DevExpress.data.AspNet.createStore({
+                                                                        key: 'Name',
+                                                                            loadUrl: `/Place/GetProvinces`,
+                                                                            useDefaultSearch: false,
+                                                                            loadMode: 'raw'
+                                                                        }),
+                                                                    };
+                                                                },
+                                                                displayExpr: 'Name',
+                                                            },
+                                                        },
+                                                    ],
+
+                                                });
+
+                                                return view;
+                                            }
+                                        })
+                                        .dxPopup('instance');
+
+                                    popup.show()
+                                },
+                            },")
+                        }
+
+                        @if (permissions.Find(x => x.Name == "Tạm vắng" && x.Permission == "Read") != null)
+                        {
+                            string per = "";
+                            if (permissions.Find(x => x.Name == "Tạm vắng" && x.Permission == "Create") != null)
+                            {
+                                per += "allowAdding: true,";
+                            }
+                            if (permissions.Find(x => x.Name == "Tạm vắng" && x.Permission == "Delete") != null)
+                            {
+                                per += "allowDeleting: true,";
+                            }
+                            if (permissions.Find(x => x.Name == "Tạm vắng" && x.Permission == "Update") != null)
+                            {
+                                per += "allowUpdating: true,";
+                            }
+
+                            @Html.Raw(@"{
+                            icon: 'runner',
+                            hint: 'Lịch sử tạm vắng',
+                            onClick(e) {
+                                const popup = $('#popupTemporaryAbsent')
+                                    .dxPopup({
+                                        width: 1000,
+                                        height: 'auto',
+                                        maxHeight: 'calc(100vh - 100px)',
+                                        visible: false,
+                                        title: 'Lịch sử tạm trú/tạm vắng',
+                                        hideOnOutsideClick: true,
+                                        showCloseButton: true,
+                                        resizeEnabled: true,
+                                        contentTemplate() {
+                                            const view = $('<div>').dxDataGrid({
+                                                dataSource: DevExpress.data.AspNet.createStore({
+                                                    key: ['Destination', 'Reason', 'DateCreate'],
+                                                    loadUrl: `/TemporaryAbsent/GetTemporaryAbsents?Id=${e.row.data.Id}`,
+                                                    insertUrl: `/TemporaryAbsent/Add?Id=${e.row.data.Id}`,
+                                                    updateUrl: `/TemporaryAbsent/Update?Id=${e.row.data.Id}`,
+                                                    deleteUrl: `/TemporaryAbsent/Delete?Id=${e.row.data.Id}`,
+                                                    onBeforeSend(method, ajaxOptions) {
+                                                        ajaxOptions.xhrFields = { withCredentials: true };
+                                                    },
+                                                }),
+                                                height: '100%',
+                                                paging: {
+                                                    pageSize: 5,
+                                                },
+                                                showBorders: true,
+                                                wordWrapEnabled: true,
+                                                editing: {
+                                                    mode: 'popup',
+                                                    " + per + @"
+                                                    useIcons: true,
+                                                    popup: {
+                                                        title: 'Tạm trú/tạm vắng',
+                                                        showTitle: true,
+                                                        width: 1000,
+                                                        height: 'auto',
+                                                    },
+                                                    form: {
+                                                        items: [{
+                                                            itemType: 'group',
+                                                            colCount: 2,
+                                                            colSpan: 2,
+                                                            items: ['Destination', 'Reason', 'AbsenceDay', 'ReturnDay', 'Note'],
+                                                        }],
+                                                    },
+                                                },
+                                                columns: [{
+                                                    dataField: 'Destination',
+                                                    dataType: 'string',validationRules: [{ type: 'required' }],
+                                                    caption: 'Địa điểm'
+                                                }, {
+                                                    dataField: 'Reason',
+                                                    dataType: 'string',validationRules: [{ type: 'required' }],
+                                                    caption: 'Lý do'
+                                                },
+                                                {
+                                                    dataField: 'DateCreate',
+                                                    dataType: 'date',
+                                                    caption: 'Ngày tạo'
+                                                },
+                                                {
+                                                    dataField: 'AbsenceDay',
+                                                    dataType: 'date',validationRules: [{ type: 'required' }],
+                                                    caption: 'Ngày đi'
+                                                },
+                                                {
+                                                    dataField: 'ReturnDay',
+                                                    dataType: 'date',validationRules: [{ type: 'required' }],
+                                                    caption: 'Ngày trở về'
+                                                }, {
+                                                    dataField: 'Note',
+                                                    dataType: 'string',
+                                                    caption: 'Ghi chú'
+                                                },
+                                                ],
+
+                                            })
+
+                                            return view;
+                                        }
+                                    })
+                                    .dxPopup('instance');
+
+                                popup.show()
+                            },
+                        },")
+                        }
+
+                        @if (permissions.Find(x => x.Name == "Tạm trú" && x.Permission == "Read") != null)
+                        {
+                            string per = "";
+                            if (permissions.Find(x => x.Name == "Tạm trú" && x.Permission == "Create") != null)
+                            {
+                                per += "allowAdding: true,";
+                            }
+                            if (permissions.Find(x => x.Name == "Tạm trú" && x.Permission == "Delete") != null)
+                            {
+                                per += "allowDeleting: true,";
+                            }
+                            if (permissions.Find(x => x.Name == "Tạm trú" && x.Permission == "Update") != null)
+                            {
+                                per += "allowUpdating: true,";
+                            }
+
+                            @Html.Raw(@"{
+                                        icon: 'home',
+                            hint: 'Tạm trú',
+                            cssClass: 'column-button-icon dx-link dx-link-icon',
+                            onClick(e) {
+                                                const popup = $('#popupTemporaryResidence')
+                                                    .dxPopup({
+                                                width: 1000,
+                                        height: 'auto',
+                                        maxHeight: 'calc(100vh - 100px)',
+                                        visible: false,
+                                        title: 'Lịch sử tạm trú',
+                                        hideOnOutsideClick: true,
+                                        showCloseButton: true,
+                                        resizeEnabled: true,
+                                        contentTemplate() {
+                                                        const view = $('<div>').dxDataGrid({
+                                                        dataSource: DevExpress.data.AspNet.createStore({
+                                                            key: ['HouseholdId', 'RelationshipHeadHouse', 'DateCreate'],
+                                                    loadUrl: `/TemporaryResidence/GetTemporaryResidences?Id=${e.row.data.Id}`,
+                                                    insertUrl: `/TemporaryResidence/Add?Id=${e.row.data.Id}`,
+                                                    updateUrl: `/TemporaryResidence/Update?Id=${e.row.data.Id}`,
+                                                    deleteUrl: `/TemporaryResidence/Delete?Id=${e.row.data.Id}`,
+                                                    onBeforeSend(method, ajaxOptions) {
+                                        ajaxOptions.xhrFields = { withCredentials: true };
+                                    },
+                                                }),
+                                                height: '100%',
+                                                paging: {
+                                                    pageSize: 5,
+                                                },
+                                                showBorders: true,
+                                                wordWrapEnabled: true,
+                                                editing: {
+                                                    mode: 'popup',
+                                                        "+per+@"
+                                                    useIcons: true,
+                                                    popup: {
+                                                        title: 'Tạm trú',
+                                                        showTitle: true,
+                                                        width: 1000,
+                                                        height: 'auto',
+                                                    },
+                                                    form: {
+                        items: [{
+                            itemType: 'group',
+                                                            colCount: 1,
+                                                            colSpan: 2,
+                                                            items: ['HouseholdId', 'RelationshipHeadHouse', 'Note'],
+                                                        }],
+                                                    },
+                                                },
+                                                columns: [{
+                        dataField: 'HouseholdId', validationRules: [{ type: 'required' }],
+                                                    dataType: 'string',
+                                                    caption: 'Hộ',
+                                                    lookup: {
+                                dataSource(options) {
+                                    return {
+                                    store: DevExpress.data.AspNet.createStore({
+                                        key: 'HouseholdId',
+                                                                    loadUrl: `/Household/GetHouseholds`,
+                                                                    useDefaultSearch: false,
+                                                                    loadMode: 'raw'
+                                                                }),
+                                                            };
+                                },
+                                                        valueExpr: 'HouseholdId',
+                                                        displayExpr: 'OwnerInfo[0].Name',
+                                                    },
+                                                    editCellTemplate: dropDownBoxEditorTemplate,
+                                                }, {
+                        dataField: 'RelationshipHeadHouse', validationRules: [{ type: 'required' }],
+                                                    dataType: 'string',
+                                                    caption: 'Quan hệ với chủ hộ'
+                                                },
+                                                {
+                        dataField: 'DateCreate',
+                                                    dataType: 'date',
+                                                    caption: 'Ngày bắt đầu tạm trú'
+                                                },
+                                                {
+                        dataField: 'Note',
+                                                    dataType: 'string',
+                                                    caption: 'Ghi chú'
+                                                },
+                                                ],
+
+                                            })
+
+                                            return view;
+                                        }
+                                    })
+                                    .dxPopup('instance');
+
+                        popup.show()
+                            }
+                        },")
+                        }
+
+                        @if (permissions.Find(x => x.Name == "Báo tử" && x.Permission == "Read") != null)
+                        {
+                            string per = "";
+                            if(permissions.Find(x => x.Name == "Báo tử" && (x.Permission == "Create" || x.Permission == "Update" || x.Permission == "Delete")) != null)
+                            {
+                                per += @"{
+                                        itemType: 'button',
+                                        buttonOptions: {
+                                            icon: 'save',
+                                            text: 'Lưu',
+                                            onClick() {
+                                                view.dxForm('instance')
+                                            }
+                                        },
+                                    }";
+                            }
+                            @Html.Raw(@"{
+                            icon: '/Content/images/dead.png',
+                            hint: 'Báo tử',
+                            cssClass: 'column-button-icon dx-link dx-link-icon',
+                            onClick(e) {
+                                const popup = $('#popupDead')
+                                    .dxPopup({
+                                        width: 1000,
+                                        maxHeight: 'calc(100vh - 100px)',
+                                        height: 'auto',
+                                        visible: false,
+                                        title: 'Báo tử',
+                                        hideOnOutsideClick: true,
+                                        showCloseButton: true,
+                                        resizeEnabled: true,
+                                        contentTemplate() {
+                                            const view = $('<div>').dxForm({
+                                                formData: e.row.data.Die || {},
+                                                colCount: 1,
+                                                validationGroup: 'dieForm',
+                                                items: [{
+                                                    itemType: 'group',
+                                                    items: [{
+                                                            dataField: 'DateOfDeath',
+                                                            label: {
+                                                                text: 'Ngày mất'
+                                                            },
+                                                            editorType: 'dxDateBox',
+                                                                validationRules: [{
+                                                                type: 'required',
+                                                            }],
+                                                        }, {
+                                                            dataField: 'ReasonDeath',
+                                                            label: {
+                                                            text: 'Lý do mất'
+                                                        },
+                                                            validationRules: [{
+                                                                type: 'required',
+                                                            }],
+                                                        }, {
+                                                            dataField: 'Declarant',
+                                                            label: {
+                                                                text: 'Người khai báo'
+                                                            },
+                                                            editorOptions: {
+                                                                dataSource: DevExpress.data.AspNet.createStore({
+                                                                    key: 'Id',
+                                                                    loadUrl: `/Household/GetRelatives?Id=${e.row.data.Id}`,
+                                                                    useDefaultSearch: false,
+                                                                    loadMode: 'raw'
+                                                                }),
+                                                                displayExpr: 'Name',
+                                                                valueExpr: 'Id'
+                                                            },
+                                                            editorType: 'dxSelectBox',
+                                                                validationRules: [{
+                                                                    type: 'required',
+                                                                }],
+                                                            }, {
+                                                            dataField: 'Note',
+                                                            label: {
+                                                            text: 'Ghi chú'
+                                                            },
+                                                            }],
+                                                }, {
+                                                            itemType: 'button',
+                                                            horizontalAlignment: 'right',
+                                                            buttonOptions: {
+                                                              icon: 'save',
+                                                              text: 'Lưu',
+                                                              onClick() {
+                                                                   const data = view.dxForm('instance').option('formData');
+                                                                   const x = DevExpress.validationEngine.validateGroup('dieForm');
+
+                                                                    if(x.isValid) {
+                                                                        axios({
+                                                                            url: `/Die/Save?Id=${e.row.data.Id}`,
+                                                                            method: 'POST',
+                                                                            data: {values:JSON.stringify(data)}
+                                                                        }).then(() => {
+                                                                            const dataGridInstance = dataGrid.dxDataGrid('instance')
+                                                                            var dataSource = dataGridInstance.getDataSource();
+                                                                            dataSource.reload();
+                                                                            toast.option({ message: 'Lưu thành công', type: 'success' });
+                                                                            toast.show();
+                                                                        }).catch(() => {
+                                                                            toast.option({ message: 'Lưu thất bại', type: 'error' });
+                                                                            toast.show();
+                                                                        })
+                                                                    }
+                                                              },
+                                                            },
+                                                          },],
+                                            });
+                                            return view;
+                                        }
+                                    })
+                                    .dxPopup('instance');
+
+                                popup.show()
+                            }
+                            },")
+                        }
+                    ],
+                }
+                ],
+            });
+        });
+    </script>
+}
