@@ -251,7 +251,11 @@
                     dataField: 'Name',
                     dataType: 'string', validationRules: [{ type: 'required' }],
                     caption: "Họ tên"
-                }, {
+                    }, {
+                    dataField: 'Id',
+                    caption: "Id",
+                        visible: false
+                    }, {
                     dataField: 'OrtherName',
                     dataType: 'string',
                     caption: "Tên khác"
@@ -259,7 +263,8 @@
                 {
                     dataField: 'Birthday',
                     dataType: 'date', validationRules: [{ type: 'required' }],
-                    caption: "Ngày sinh"
+                    caption: "Ngày sinh",
+                    sortOrder: 'desc'
                 }, {
                     dataField: 'Gender',
                     dataType: 'string', validationRules: [{ type: 'required' }],
@@ -786,7 +791,11 @@
                         displayExpr: 'Name',
                     },
                 },
-
+                    {
+                        dataField: 'Die.DateOfDeath',
+                        dataType: 'date',
+                        caption: "Đã chết",
+                    },
                 {
                     type: 'buttons',
                     buttons: ['edit', 'delete',
@@ -1283,26 +1292,7 @@
                                                             validationRules: [{
                                                                 type: 'required',
                                                             }],
-                                                        }, {
-                                                            dataField: 'Declarant',
-                                                            label: {
-                                                                text: 'Người khai báo'
-                                                            },
-                                                            editorOptions: {
-                                                                dataSource: DevExpress.data.AspNet.createStore({
-                                                                    key: 'Id',
-                                                                    loadUrl: `/Household/GetRelatives?Id=${e.row.data.Id}`,
-                                                                    useDefaultSearch: false,
-                                                                    loadMode: 'raw'
-                                                                }),
-                                                                displayExpr: 'Name',
-                                                                valueExpr: 'Id'
-                                                            },
-                                                            editorType: 'dxSelectBox',
-                                                                validationRules: [{
-                                                                    type: 'required',
-                                                                }],
-                                                            }, {
+                                                        },  {
                                                             dataField: 'Note',
                                                             label: {
                                                             text: 'Ghi chú'
@@ -1350,6 +1340,20 @@
                     ],
                 }
                 ],
+
+
+                summary: {
+                    groupItems: [
+                        {
+                            column: 'Name',
+                            summaryType: 'count',
+                        }
+                    ],
+                    totalItems: [{
+                        column: 'Name',
+                        summaryType: 'count',
+                    },]
+                }
             });
         });
     </script>

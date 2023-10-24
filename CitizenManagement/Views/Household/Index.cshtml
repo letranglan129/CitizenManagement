@@ -167,12 +167,9 @@
                             valueExpr: 'Id'
                         },
                     }, {
-                        dataField: 'Members',
-                        dataType: 'string',
-                        caption: "Số lượng",
-                        cellTemplate(container, option) {
-                            container.text(`${option?.value?.length || "null"}`)
-                        }
+                        dataField: 'CountMember',
+                        dataType: 'number',
+                        caption: "Số lượng thành viên",
                     }, {
                         dataField: "Place",
                         caption: "Tại",
@@ -330,8 +327,7 @@
                                                         width: 1000,
                                                         height: 'auto',
                                                         onHidden(e) {
-                                                            const dataGridInstance = dataGrid.dxDataGrid('instance')
-                                                            dataGridInstance.option('dataSource').load();
+                                                            window.location.reload()
                                                         }
                                                     },
                                                     form: {
@@ -419,11 +415,22 @@
                             }
                         }")
                     }
-                           ],
+                        ],
                     }
                 ],
 
-
+                summary: {
+                    groupItems: [
+                        {
+                            column: 'HouseholdId',
+                            summaryType: 'count',
+                        }
+                    ],
+                    totalItems: [{
+                        column: 'HouseholdId',
+                        summaryType: 'count',
+                    },]
+                }
 
             });
         });

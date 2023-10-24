@@ -1,4 +1,5 @@
 ﻿$(() => {
+    const toast = $('#toast').dxToast({ displayTime: 600 }).dxToast('instance');
     const drawer = $('#drawer').dxDrawer({
         opened: true,
         template() {

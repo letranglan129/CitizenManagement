@@ -29,7 +29,7 @@ namespace CitizenManagement.Controllers
 
         public string GetHouseholds()
         {
-            var result = DB.get<Household>("household").Aggregate().Lookup<Household, Household>("people", "Members.MemberId", "_id", "MembersLookup").Lookup<Household, Household>("people", "Owner", "_id", "OwnerInfo").ToList();
+            var result = DB.get<Household>("household").Aggregate().Lookup<Household, Household>("people", "Members.MemberId", "_id", "MembersLookup").Lookup<Household, Household>("people", "Owner", "_id", "OwnerInfo").ToList().OrderByDescending(x => x.DateCreate).Select(x => new { x.CreatedAt, x.DateCreate, x.HouseholdId, x.Id, x.Members, x.MembersLookup, x.Owner, x.OwnerInfo, x.Place, CountMember = x.Members != null ? x.Members.Count : 0}).ToList();
             return JsonConvert.SerializeObject(result);
         }
 
